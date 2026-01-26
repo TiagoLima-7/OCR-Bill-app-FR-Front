@@ -17,10 +17,53 @@ const row = (bill) => {
       </td>
     </tr>
     `)
+}
+
+/**
+ * Parse une date en timestamp (ms). Gère quelques formats courants.
+ * Retourne 0 si parsing impossible (pousse la date en fin de liste).
+ */
+const parseToTimestamp = (dateStr) => {
+  if (!dateStr) return 0
+
+  // tentative directe (ISO, YYYY-MM-DD, etc.)
+  let ts = Date.parse(dateStr)
+  if (!Number.isNaN(ts)) return ts
+
+  // essayer DD/MM/YYYY ou DD.MM.YYYY ou DD-MM-YYYY
+  const parts = dateStr.split(/[\/\.\-]/)
+  if (parts.length === 3) {
+    // si premier élément est l'année (YYYY) -> ISO probable
+    if (parts[0].length === 4) {
+      const iso = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`
+      ts = Date.parse(iso)
+      if (!Number.isNaN(ts)) return ts
+    } else {
+      // DD/MM/YYYY -> YYYY-MM-DD
+      const iso = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`
+      ts = Date.parse(iso)
+      if (!Number.isNaN(ts)) return ts
+    }
   }
 
+  // fallback
+  return 0
+}
+
 const rows = (data) => {
-  return (data && data.length) ? data.map(bill => row(bill)).join("") : ""
+  if (!data || !data.length) return ""
+
+  // clonage pour ne pas muter l'original
+  const sorted = [...data].sort((a, b) => {
+    const ta = parseToTimestamp(a.date)
+    const tb = parseToTimestamp(b.date)
+    // tri antichrono : plus récentes d'abord
+    return tb - ta
+    // tri chrono: plus ancienns d'abord
+    // return ta - tb;
+  })
+
+  return sorted.map(bill => row(bill)).join("")
 }
 
 export default ({ data: bills, loading, error }) => {
@@ -75,6 +118,5 @@ export default ({ data: bills, loading, error }) => {
         </div>
       </div>
       ${modal()}
-    </div>`
-  )
+    </div>`)
 }

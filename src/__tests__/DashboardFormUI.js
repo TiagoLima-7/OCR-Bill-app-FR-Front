@@ -75,5 +75,23 @@ describe('Given I am connected as an Admin and I am on Dashboard Page', () => {
       expect(screen.getByText(bill.commentAdmin)).toBeTruthy()
     })
   })
-})
+  describe('When bill has missing optional fields', () => {
+    test('Then, it should render without crashing', () => {
+      const partialBill = {...bill}
+      delete partialBill.pct
+      delete partialBill.commentAdmin
+      const html = DashboardFormUI(partialBill)
+      document.body.innerHTML = html
+      expect(screen.getByText(partialBill.name)).toBeTruthy()
+    })
+  })
 
+  describe('When bill date is invalid format', () => {
+    test('Then, it should display raw date string', () => {
+      const badDateBill = {...bill, date: "not-a-date"}
+      const html = DashboardFormUI(badDateBill)
+      document.body.innerHTML = html
+      expect(screen.getByText("not-a-date")).toBeTruthy()
+    })
+  })
+});

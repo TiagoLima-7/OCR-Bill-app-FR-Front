@@ -18,13 +18,28 @@ export default class NewBill {
   handleChangeFile = e => {
     e.preventDefault()
     const file = this.document.querySelector(`input[data-testid="file"]`).files[0]
-    const filePath = e.target.value.split(/\\/g)
-    const fileName = filePath[filePath.length-1]
+
+
+    // Vérification de l'extension autorisée
+    const allowedExtensions = ['jpg', 'jpeg', 'png']
+    const fileExtension = file.name.split('.').pop().toLowerCase()
+
+    if (!allowedExtensions.includes(fileExtension)) {
+      // Format non autorisé
+      alert("Format de fichier non valide. Seuls les fichiers .jpg, .jpeg et .png sont acceptés.")
+      fileInput.value = "" // Réinitialise le champ fichier
+      return
+    }
+    // Pour pouvoir tester sans avoir un fileName = ""
+    // const filePath = e.target.value.split(/\\/g)
+    // const fileName = filePath[filePath.length-1]
+    const fileName = file.name
     const formData = new FormData()
     const email = JSON.parse(localStorage.getItem("user")).email
     formData.append('file', file)
     formData.append('email', email)
 
+    this.fileName = fileName
     this.store
       .bills()
       .create({
