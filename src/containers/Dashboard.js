@@ -93,15 +93,31 @@ export default class {
     $('#modaleFileAdmin1').modal('show')
   }
 
-  handleEditTicket(e, bill, index) {
-    const bills = this.bills
+    handleEditTicket(e, bill, index) {
+    // 👉 CAS : on clique sur la même carte → fermer
+    if (this.currentOpenBillId === bill.id) {
+      $('.dashboard-right-container div').html(`
+        <div id="big-billed-icon" data-testid="big-billed-icon">
+          ${BigBilledIcon}
+        </div>
+      `)
 
-    bills.forEach(b => {
+      this.currentOpenBillId = null
+      return
+    }
+
+    // 👉 Sinon : ouvrir la nouvelle carte
+    this.currentOpenBillId = bill.id
+
+    // Reset background de toutes les cartes
+    this.bills.forEach(b => {
       $(`#open-bill${b.id}`).css({ background: '#0D5AE5' })
     })
 
+    // Highlight carte active
     $(`#open-bill${bill.id}`).css({ background: '#2A2B35' })
 
+    // Affichage du formulaire
     $('.dashboard-right-container div').html(DashboardFormUI(bill))
     $('.vertical-navbar').css({ height: '150vh' })
 
@@ -109,6 +125,7 @@ export default class {
     $('#btn-accept-bill').off('click').on('click', () => this.handleAcceptSubmit(bill))
     $('#btn-refuse-bill').off('click').on('click', () => this.handleRefuseSubmit(bill))
   }
+
 
   handleShowTickets(e, index) {
     const state = this.listState[index]
@@ -158,18 +175,31 @@ export default class {
   }
 
   getBillsAllUsers = () => {
-    if (!this.store) return []
+  if (!this.store) return []
 
-    return this.store
-      .bills()
-      .list()
-      .then(snapshot =>
-        snapshot.map(doc => ({
+  return this.store
+    .bills()
+    .list()
+    .then(snapshot =>
+      snapshot
+        .map(doc => ({
           id: doc.id,
           ...doc
         }))
-      )
-  }
+        .sort((a, b) => {
+          const dateA = Date.parse(a.date)
+          const dateB = Date.parse(b.date)
+
+          // Dates invalides à la fin
+          if (isNaN(dateA)) return 1
+          if (isNaN(dateB)) return -1
+
+          // Plus récent → plus ancien
+          return dateB - dateA
+        })
+    )
+}
+
 
   updateBill = (bill) => {
     if (!this.store) return
