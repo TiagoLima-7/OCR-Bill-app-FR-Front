@@ -174,6 +174,7 @@ export default class {
     this.onNavigate(ROUTES_PATH.Dashboard)
   }
 
+
   getBillsAllUsers = () => {
   if (!this.store) return []
 
