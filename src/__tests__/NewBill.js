@@ -358,3 +358,64 @@ describe("When handleChangeFile fails during store create", () => {
     consoleSpy.mockRestore()
   })
 })
+
+describe("When I submit the form with valid data to the API", () => {
+  test("Then store.bills().create should be called and new bill saved", async () => {
+    //Mock du store
+    const mockCreate = jest.fn().mockResolvedValue({
+      key: "abc123",
+      fileUrl: "https://img.test/new.jpg"
+    })
+    const mockUpdate = jest.fn().mockResolvedValue({})
+    const fakeStore = { 
+      bills: () => ({ 
+        create: mockCreate,   //simule l'upload du fichier dans le store
+        update: mockUpdate    //simule la mise à jour de la note de frais
+      })
+     }
+    const onNavigate = jest.fn()
+
+    //Préparation du DOM
+    document.body.innerHTML = NewBillUI()
+
+    //Instanciation de NewBill
+    const newBill = new NewBill({ 
+      document,         //le DOM de test
+      onNavigate,       //mock la navigation pour vérifier qu'après submit on va sur la page Bills
+      store: fakeStore, //le fake store mocké  
+      localStorage: window.localStorage })  //mocké pour simuler un utilisateur Employée connecté
+
+    // Simulation d'upload d'un fichier valide
+    const file = new File(["dummy content"], "receipt.png", { type: "image/png" })
+    const fileInput = screen.getByTestId("file")
+    Object.defineProperty(fileInput, "files", { configurable: true, get: () => [file] })
+    fireEvent.change(fileInput)
+
+    // Remplissage du formulaire
+    fireEvent.change(screen.getByTestId("expense-type"), { target: { value: "Restaurants et bars" } })
+    fireEvent.change(screen.getByTestId("expense-name"), { target: { value: "Lunch" } })
+    fireEvent.change(screen.getByTestId("datepicker"), { target: { value: "2023-02-15" } })
+    fireEvent.change(screen.getByTestId("amount"), { target: { value: "55" } })
+    fireEvent.change(screen.getByTestId("vat"), { target: { value: "11" } })
+    fireEvent.change(screen.getByTestId("pct"), { target: { value: "20" } })
+    fireEvent.change(screen.getByTestId("commentary"), { target: { value: "team lunch" } })
+
+    //Soumission du formulaire
+    fireEvent.submit(screen.getByTestId("form-new-bill")) //cela déclenche handleSubmit() dans NewBill.js
+
+    //handleSubmit crée:
+    // 1 - un object bill avec les données
+    // 2 - appelle UpdateBill(bill) -> store.bills().update()
+    // 3 - navigue vers ROUTES_PATH['Bills] via onNavigate
+
+
+    //Vérifications
+    await waitFor(() => {
+      expect(mockCreate).toHaveBeenCalled()
+      expect(mockUpdate).toHaveBeenCalled()
+      expect(newBill.billId).toBe("abc123")
+      expect(newBill.fileUrl).toBe("https://img.test/new.jpg")
+      expect(newBill.fileName).toBe("receipt.png")
+    })
+  })
+})

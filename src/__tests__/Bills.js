@@ -322,3 +322,52 @@ describe("Bills container", () => {
   })
 
 });
+
+describe("Integration - GET Bills", () => {
+  test("fetches bills from API and renders them", async () => {
+    
+    //Définition des données mock
+    const bills = [
+      {
+        id: "1",
+        date: "2024-01-10",
+        status: "pending",
+        name: "Test Bill",
+        amount: 100,
+        type: "Transports",
+        email: "employee@test.tld"
+      }
+    ]
+
+    //Mock du store
+    const store = {
+      bills: jest.fn(() => ({
+        list: jest.fn(() => Promise.resolve(bills)) //Renvoie une promesse résolue avec le tableau bills
+      }))
+    }
+
+    //Préparation de l'UI
+    const html = BillsUI({ data: bills })
+    const root = document.createElement("div")
+    root.innerHTML = html
+    document.body.appendChild(root)
+
+
+    //Instantiation du container
+    const billsContainer = new Bills({
+      document,                           //référence au DOM
+      onNavigate: jest.fn(),              //mock de na navigation
+      store,                              //le store mocké
+      localStorage: window.localStorage   //mock d'utilisateur employée connecté
+    })
+
+    //Appel de la méthode getBills()
+    //qui appelle store.bills().list() qui retourne les données récupérées
+    const data = await billsContainer.getBills()
+
+    // Vérifications
+    expect(store.bills).toHaveBeenCalled()
+    expect(data.length).toBe(1)
+    expect(screen.getByText("Test Bill")).toBeTruthy()
+  })
+})
